@@ -31,3 +31,4 @@ Projektna dokumentacija je shranjena v direktoriju [`docs/`](docs/).
 - `backend/` – strežniški del aplikacije
 - `docs/` – projektna dokumentacija
 
+
