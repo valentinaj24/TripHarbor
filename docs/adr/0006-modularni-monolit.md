@@ -6,27 +6,27 @@
 
 ## Kontekst in problem
 
-TripHarbor je projekt omejenega obsega, ki ga razvija ena oseba. Funkcionalnosti uporabnikov, izletov, aktivnosti in prijav so močno povezane, posebej pri odobritvah in preverjanju kapacitet.
+Prijave, izleti, uporabniki in administrativne odobritve so povezani. Ker gre za samostojen razvoj projekta, je pomembna pregledna razdelitev kode brez potrebe po upravljanju več ločenih strežnikov.
 
 ## Obravnavane možnosti
 
-- Modularni monolit
-- Mikrostoritve
-- Nestrukturiran monolit
+- Modularni monolit.
+- Mikrostoritve.
+- Monolit brez jasne delitve na module.
 
 ## Sprejeta odločitev in utemeljitev
 
-**Izbrana možnost: Modularni monolit.** Odločitev je primerna za TripHarbor, ker omogoča ločene module za uporabnike, izlete in prijave, hkrati pa enoten zagon in enostavnejše transakcije; mikrostoritve bi za trenutni obseg dodale nepotrebno komunikacijo in uvajanje.
+Backend bo zasnovan kot modularni monolit: ena aplikacija z ločenimi moduli `auth`, `users`, `trips`, `registrations` in `admin`. Za samostojen razvoj je takšna zasnova enostavnejša za zagon in testiranje kot več mikrostoritev. Povezani postopki, na primer sprejem prijave in preverjanje kapacitete, lahko ostanejo znotraj iste aplikacije in podatkovne transakcije. Monolit brez modulov ni izbran, ker bi sčasoma otežil pregled nad poslovnimi pravili.
 
-### Posledice
+## Posledice
 
 **Pozitivne:**
 
-- Jasne meje modulov in predvidljiv vzdrževalni odtis; enostavnejši razvoj, testiranje in uvajanje.
+- En sam backend za lokalni zagon in testiranje; lažje usklajevanje povezanih poslovnih pravil; pregledna razdelitev kode po funkcionalnostih.
 
 **Negativne:**
 
-- Napaka lahko vpliva na celotno strežniško aplikacijo; meje modulov je treba zavestno ohranjati.
+- Napaka v skupnem procesu lahko vpliva na celoten backend. Če meje med moduli niso jasno določene, lahko nastane preveč medsebojnih odvisnosti.
 
 ## Povezave
 

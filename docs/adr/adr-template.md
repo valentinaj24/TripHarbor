@@ -1,33 +1,33 @@
-# {Kratek naslov odločitve}
+# [Naslov arhitekturne odločitve]
 
 - **Status:** Predlagano / Sprejeto / Nadomeščeno
 - **Datum:** LLLL-MM-DD
-- **Nadomešča:** Ni / [000X – Prejšnja odločitev](000X-naslov.md)
+- **Nadomešča:** Ni / povezava do prejšnjega ADR
 
 ## Kontekst in problem
 
-{Opišite problem, zahteve in omejitve, pomembne za odločitev.}
+[Kateri konkreten problem je treba rešiti v projektu? Zakaj je odločitev pomembna?]
 
 ## Obravnavane možnosti
 
-- {Možnost A}
-- {Možnost B}
-- {Možnost C}
+- [Prva možnost]
+- [Druga možnost]
+- [Tretja možnost, če je smiselna]
 
 ## Sprejeta odločitev in utemeljitev
 
-**Izbrana možnost: {Možnost A}.** {Pojasnite, zakaj najbolje ustreza projektu in zakaj alternative niso primernejše.}
+[Katera možnost je bila izbrana in zakaj je primernejša za projekt od alternativ?]
 
-### Posledice
+## Posledice
 
 **Pozitivne:**
 
-- {Konkretna prednost za projekt.}
+- [Konkretna prednost izbrane rešitve]
 
 **Negativne:**
 
-- {Konkretna slabost, omejitev ali tveganje.}
+- [Omejitev ali dodatna obveznost]
 
 ## Povezave
 
-- [Arhitektura in tehnološki sklad](../04-arhitektura-in-tehnoloski-sklad.md)
+- [Povezana projektna dokumentacija ali prejšnji ADR, če obstaja]

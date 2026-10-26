@@ -6,27 +6,27 @@
 
 ## Kontekst in problem
 
-Udeleženec, organizator in administrator imajo različne pravice. Strežnik mora prepoznati uporabnika, varno shraniti gesla in preprečiti, da bi udeleženec odobril objavo ali upravljal tuje prijave.
+TripHarbor ima tri vloge. Udeleženec ne sme odobriti objave, organizator pa sme urejati samo svoje izlete. Gesla ne smejo biti shranjena kot navadno besedilo.
 
 ## Obravnavane možnosti
 
-- JWT + bcrypt + Express middleware
-- Seje na strežniku + bcrypt
-- Zunanja upravljana storitev za identiteto
+- JWT z bcrypt in Express middleware.
+- Strežniške seje s piškotki.
+- Preverjanje pravic samo na frontendu.
 
 ## Sprejeta odločitev in utemeljitev
 
-**Izbrana možnost: JWT + bcrypt + Express middleware.** Odločitev je primerna za TripHarbor, ker JWT ustreza ločenemu odjemalcu in REST API-ju, bcrypt ščiti shranjena gesla, middleware pa centralizira preverjanje prijave in vlog pred izvajanjem poslovne logike.
+Za avtentikacijo bodo uporabljeni kratkoživi JWT, za zgoščevanje gesel bcrypt, za preverjanje dostopa pa Express middleware. Backend bo pri zaščitenih zahtevah preverjal veljavnost žetona, trenutno uporabniško vlogo in po potrebi lastništvo izleta ali prijave. To je pomembno, ker organizator ne sme urejati tujih izletov, udeleženec pa ne sme odobravati objav. Strežniške seje so veljavna alternativa, vendar je za načrtovani ločeni REST API izbran pristop z dostopnimi žetoni.
 
-### Posledice
+## Posledice
 
 **Pozitivne:**
 
-- Centralno preverjanje identitete in vlog; gesla niso shranjena v čisti obliki.
+- Preverjanje identitete in vlog na strežniški strani; gesla niso shranjena v berljivi obliki.
 
 **Negativne:**
 
-- Potrebno je pravilno upravljanje ključev, poteka žetonov in odjave; preverjanje lastništva izleta mora ostati tudi v storitvah.
+- Treba je varovati žetone, določiti njihov kratek rok veljavnosti in obravnavati potek; pri spremembi pravic ni dovolj zaupati le podatkom v starejšem žetonu.
 
 ## Povezave
 

@@ -6,27 +6,27 @@
 
 ## Kontekst in problem
 
-Strežnik mora ponuditi REST API, preverjati JWT, izvajati pravila prijav in uporabljati PostgreSQL. Ker frontend uporablja TypeScript, je koristna podobna razvojna izkušnja.
+Backend bo skrbel za prijavo uporabnikov, ustvarjanje izletov, preverjanje programa, administrativno odobritev in sprejem prijav. Potreben je REST API, ki ga bo mogoče razvijati v okviru projekta.
 
 ## Obravnavane možnosti
 
-- Node.js + Express + TypeScript
-- Python + FastAPI
-- Java + Spring Boot
+- Node.js z Expressom.
+- Java s Spring Bootom.
+- NestJS.
 
 ## Sprejeta odločitev in utemeljitev
 
-**Izbrana možnost: Node.js + Express + TypeScript.** Odločitev je primerna za TripHarbor, ker enoten jezik na obeh straneh zmanjša preklapljanje med tehnologijami, Express pa omogoča preprosto sestavljanje poti, middleware in storitev brez nepotrebnega ogrodnega obsega.
+Za backend so izbrani Node.js, Express in TypeScript. Isti programski jezik na frontendu in backendu poenostavi samostojen razvoj, Express pa omogoča jasno razdelitev REST API-ja na poti, kontrolerje in storitve. Spring Boot in NestJS bi bila prav tako ustrezna, vendar bi za trenutni obseg TripHarbora prinesla dodatno strukturo, ki ni nujna za izvedbo MVP.
 
-### Posledice
+## Posledice
 
 **Pozitivne:**
 
-- Enoten jezik za frontend in backend; prilagodljiva organizacija REST poti.
+- Isti programski jezik na obeh straneh in dovolj prilagodljiv REST API.
 
 **Negativne:**
 
-- Več arhitekturnih pravil je treba določiti samostojno; asinhrone napake in validacijo je treba dosledno obravnavati.
+- Express sam ne določa strukture projekta, zato je treba posebej poskrbeti za organizacijo modulov, obravnavo napak in varnost.
 
 ## Povezave
 

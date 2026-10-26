@@ -1,4 +1,4 @@
-# Zod in strežniška poslovna validacija
+# Zod in preverjanje poslovnih pravil
 
 - **Status:** Sprejeto
 - **Datum:** 2026-10-22
@@ -6,27 +6,27 @@
 
 ## Kontekst in problem
 
-API sprejema podatke o izletih in aktivnostih, ki so lahko napačnega tipa ali v nasprotju s poslovnimi pravili. Program aktivnosti mora upoštevati datume izleta, kronološki vrstni red in podvojene začetke.
+Organizator bo vnašal datume izleta, kapaciteto in aktivnosti. Napačni tipi podatkov ali neveljavni datumi bi lahko povzročili napačno objavo. Preveriti je treba tudi pravila, ki primerjajo več aktivnosti.
 
 ## Obravnavane možnosti
 
-- Zod za obliko podatkov + preverjanje pravil v storitvah
-- Ročna validacija vseh polj
-- Validacija samo na frontendu
+- Zod in ločeno preverjanje v storitvah.
+- Ročno preverjanje vseh polj.
+- Preverjanje samo v obrazcih.
 
 ## Sprejeta odločitev in utemeljitev
 
-**Izbrana možnost: Zod za obliko podatkov + preverjanje pravil v storitvah.** Odločitev je primerna za TripHarbor, ker Zod preveri strukturo in tipe vhodnih podatkov, medtem ko storitveni sloj preverja pravila, odvisna od več aktivnosti in stanja izleta; samo frontend validacija bi se lahko obšla.
+Za preverjanje vhodnih podatkov je izbran Zod, dodatna poslovna pravila pa bodo izvedena v storitvenem sloju backenda. Zod bo preverjal zahtevana polja in obliko podatkov, storitve pa bodo primerjale datume aktivnosti s trajanjem izleta, zaznavale podvojene začetne čase na isti dan in preverjale kronološki vrstni red. Samo preverjanje obrazcev ne bi zadostovalo, saj je API mogoče poklicati tudi brez frontenda. Dejanskega prekrivanja trajanja aktivnosti ni mogoče preveriti, ker podatkovni model ne vsebuje končnega časa.
 
-### Posledice
+## Posledice
 
 **Pozitivne:**
 
-- Jasna ločitev tehničnih in poslovnih preverjanj; enotna zaščita vseh API zahtevkov.
+- Jasnejše napake pri vnosu in ločeno preverjanje pravil celotnega programa; enaka pravila veljajo ne glede na frontend.
 
 **Negativne:**
 
-- Pravila so razdeljena med sheme in storitve; treba je dosledno razlikovati blokirajoče napake in opozorila.
+- Potrebni sta dve ravni preverjanja, ki morata biti med seboj usklajeni. Opozorila in sporočila o napakah morajo biti uporabniku razumljiva.
 
 ## Povezave
 
