@@ -1,4 +1,4 @@
-# React in TypeScript za frontend
+# React in TypeScript za uporabniški vmesnik
 
 - **Status:** Sprejeto
 - **Datum:** 2026-10-22
@@ -6,27 +6,28 @@
 
 ## Kontekst in problem
 
-TripHarbor vsebuje več povezanih interaktivnih pogledov: seznam in filtre izletov, zemljevid, podrobnosti ter organizatorske obrazce. Podatki o izletih in prijavah se prenašajo prek API-ja.
+Na strani za raziskovanje izletov se bodo spreminjali filtri, seznam rezultatov in zemljevid. Podobni podatki o izletu bodo prikazani tudi na strani s podrobnostmi in v organizatorjevi nadzorni plošči.
 
 ## Obravnavane možnosti
 
-- React s TypeScriptom
-- Vue s TypeScriptom
-- Vanilla JavaScript brez komponentnega ogrodja
+- React s TypeScriptom.
+- React z JavaScriptom.
+- Vue.
+- Navadni HTML in JavaScript.
 
 ## Sprejeta odločitev in utemeljitev
 
-**Izbrana možnost: React s TypeScriptom.** Odločitev je primerna za TripHarbor, ker ponovno uporabne komponente olajšajo gradnjo kartic, obrazcev in prikazov stanj, TypeScript pa pomaga odkriti neskladja med podatki API-ja in komponentami že med razvojem.
+Za uporabniški vmesnik sta izbrana React in TypeScript. React omogoča ponovno uporabo kartic izletov, filtrov in obrazcev na straneh Explore, Trip Details in nadzornih ploščah. TypeScript pomaga pri preverjanju oblik podatkov, kot so status izleta, datumi in število prostih mest. React brez TypeScripta bi zahteval manj začetne nastavitve, vendar bi omogočal manj preverjanja podatkovnih tipov med razvojem.
 
-### Posledice
+## Posledice
 
 **Pozitivne:**
 
-- Ponovna uporaba komponent; preverjanje tipov pri modelih izletov in prijav.
+- Ponovna uporaba komponent in bolj pregledno delo z oblikami podatkov; manj napak pri spreminjanju modelov.
 
 **Negativne:**
 
-- Potreben je začetni dogovor o strukturi komponent in tipih; TypeScript ne nadomesti preverjanja podatkov na strežniku.
+- Za manjše spremembe je treba vzdrževati tipe; na začetku je nekaj več nastavitev kot pri navadnem JavaScriptu.
 
 ## Povezave
 

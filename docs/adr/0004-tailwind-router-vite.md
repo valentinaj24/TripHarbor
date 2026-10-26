@@ -6,27 +6,27 @@
 
 ## Kontekst in problem
 
-Frontend potrebuje dosleden videz, prehode med javnimi in zaščitenimi pogledi ter hitro lokalno razvojno okolje. Projekt razvija ena oseba, zato je pomembno zmanjšati konfiguracijo.
+TripHarbor potrebuje različne strani za iskanje, podrobnosti izleta, prijave in administracijo. Pomembno je, da imajo strani enoten videz in da jih je mogoče med razvojem hitro preizkušati.
 
 ## Obravnavane možnosti
 
-- Tailwind CSS + React Router + Vite
-- Lastni CSS + ročno usmerjanje + Webpack
-- Komponentna UI knjižnica in drugo razvojno orodje
+- Tailwind CSS ali lastni CSS.
+- React Router ali ročno upravljanje prikazanih strani.
+- Vite ali kompleksnejša konfiguracija gradnje.
 
 ## Sprejeta odločitev in utemeljitev
 
-**Izbrana možnost: Tailwind CSS + React Router + Vite.** Odločitev je primerna za TripHarbor, ker Tailwind omogoča hitro oblikovanje odzivnih pogledov, React Router loči poti za udeleženca, organizatorja in administratorja, Vite pa poenostavi zagon in gradnjo React aplikacije.
+Za oblikovanje je izbran Tailwind CSS, za navigacijo React Router, za lokalni razvoj pa Vite. Tailwind omogoča enotne razmike in odzivne postavitve kartic, filtrov ter obrazcev. React Router bo povezoval ločene strani, vključno s podrobnostmi posameznega izleta, Vite pa poenostavi zagon in sprotno preverjanje sprememb. Lastni CSS in ročno preklapljanje strani sta mogoča, vendar bi zahtevala več ponavljajočega se dela.
 
-### Posledice
+## Posledice
 
 **Pozitivne:**
 
-- Hitrejše oblikovanje wireframeov v komponente; pregledna navigacija; enostaven razvojni zagon.
+- Enoten videz, jasna navigacija in hitrejši lokalni razvoj.
 
 **Negativne:**
 
-- Razredi Tailwind lahko postanejo nepregledni; usmerjanje v brskalniku samo po sebi ne zagotavlja avtorizacije.
+- Tailwind lahko zaradi številnih razredov zmanjša preglednost kode JSX; navigacijo in dovoljenja za dostop do posameznih poti je treba pravilno urediti.
 
 ## Povezave
 

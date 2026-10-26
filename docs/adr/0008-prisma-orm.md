@@ -6,27 +6,27 @@
 
 ## Kontekst in problem
 
-Backend mora pogosto povezovati izlete, destinacije, aktivnosti, uporabnike in prijave. Ročno pisanje vseh SQL poizvedb bi povečalo možnost neskladij med podatkovnim modelom in TypeScript kodo.
+Backend bo pogosto povezoval izlete z destinacijami, organizatorji, aktivnostmi in prijavami. Ker je predviden TypeScript, je pomembno pri pisanju poizvedb dobiti pomoč pri preverjanju tipov.
 
 ## Obravnavane možnosti
 
-- Prisma ORM
-- Neposredni SQL prek pg
-- Sequelize ORM
+- Prisma ORM.
+- Neposredne SQL-poizvedbe s knjižnico pg.
+- TypeORM.
 
 ## Sprejeta odločitev in utemeljitev
 
-**Izbrana možnost: Prisma ORM.** Odločitev je primerna za TripHarbor, ker iz sheme ustvarja tipiziran odjemalec za relacije in poizvedbe, kar olajša delo s petimi entitetami; za kritično potrjevanje kapacitet je še vedno mogoče uporabiti ustrezne transakcije.
+Za dostop do PostgreSQL je izbran Prisma ORM. Relacije med izleti, organizatorji, destinacijami, aktivnostmi in prijavami bodo opisane v shemi, TypeScript pa bo omogočal tipizirano delo s poizvedbami. To je uporabno zlasti pri pridobivanju podrobnosti izleta skupaj s programom in organizatorjem. Neposredni SQL ostaja možnost za zahtevnejše primere, vendar ni izbran za večino običajnih poizvedb.
 
-### Posledice
+## Posledice
 
 **Pozitivne:**
 
-- Tipizirane poizvedbe in pregledne relacije; manj ročnega preslikavanja podatkov.
+- Manj ponavljajoče se kode za običajne poizvedbe; tipi pomagajo pri delu z relacijami.
 
 **Negativne:**
 
-- Dodatna odvisnost in potreba po učenju Prisma API-ja; zahtevnejše poizvedbe lahko zahtevajo posebno obravnavo.
+- Za zahtevnejše poizvedbe ali transakcijsko zaščito bo morda potreben dodaten SQL; Prisma doda lastno orodje in način dela.
 
 ## Povezave
 

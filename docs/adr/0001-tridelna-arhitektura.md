@@ -1,4 +1,4 @@
-# Tridelna arhitektura
+# Tridelna arhitektura aplikacije
 
 - **Status:** Sprejeto
 - **Datum:** 2026-10-22
@@ -6,27 +6,27 @@
 
 ## Kontekst in problem
 
-TripHarbor potrebuje uporabniški vmesnik za udeležence, organizatorje in administratorja, poslovna pravila za prijave ter trajno shranjevanje povezanih podatkov. Če bi bili vsi deli prepleteni, bi spremembe pravil vplivale tudi na prikaz in shranjevanje.
+V TripHarborju bodo udeleženci iskali izlete, organizatorji urejali programe in prijave, administratorji pa odobravali objave. Prikaz podatkov zato ne sme biti isto mesto, kjer se odloča, kdo lahko potrdi prijavo ali objavi izlet.
 
 ## Obravnavane možnosti
 
-- Tridelna arhitektura (odjemalec, API, podatkovna baza)
-- Enotna aplikacija z neposredno povezano predstavitveno in podatkovno logiko
-- Odjemalec z neposrednim dostopom do baze
+- Tridelna arhitektura.
+- Aplikacija z uporabniškim vmesnikom in poslovno logiko v enem delu.
+- Neposreden dostop odjemalca do podatkovne baze.
 
 ## Sprejeta odločitev in utemeljitev
 
-**Izbrana možnost: Tridelna arhitektura.** Odločitev je primerna za TripHarbor, ker ločitev prikaza, poslovnih pravil in podatkov omogoča, da se preverjanje vlog, odobritve objav in omejitve kapacitet izvajajo na strežniku, ne v brskalniku.
+Za TripHarbor je izbrana tridelna arhitektura, ki ločuje uporabniški vmesnik, poslovno logiko in podatkovno bazo. Prikaz prostih mest se lahko tako spremeni neodvisno od pravila, ki organizatorju preprečuje sprejem več udeležencev, kot jih dovoljuje kapaciteta. Neposreden dostop iz brskalnika do podatkovne baze ni primeren, saj bi otežil preverjanje dovoljenj in poslovnih pravil.
 
-### Posledice
+## Posledice
 
 **Pozitivne:**
 
-- Jasnejše odgovornosti posameznih plasti; lažje neodvisno testiranje API-ja.
+- Pravila za vloge in kapacitete bodo na enem mestu v backendu; posamezne dele bo lažje preverjati in spreminjati.
 
 **Negativne:**
 
-- Več povezav med deli sistema; potrebno je usklajevanje podatkovnih pogodb.
+- Potrebna je komunikacija med tremi deli in dodatna nastavitev povezav ter obravnave napak.
 
 ## Povezave
 

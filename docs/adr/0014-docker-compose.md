@@ -1,4 +1,4 @@
-# Docker Compose za lokalno razvojno okolje
+# Docker Compose za lokalni PostgreSQL
 
 - **Status:** Sprejeto
 - **Datum:** 2026-10-22
@@ -6,27 +6,27 @@
 
 ## Kontekst in problem
 
-Projekt uporablja PostgreSQL in Node.js aplikacijo, zato je pomembno, da je razvojno okolje ponovljivo in ne odvisno od ročne namestitve vseh storitev na računalnik.
+Za razvoj bo potrebna lokalna podatkovna baza PostgreSQL s trajnim shranjevanjem. Pomembno je, da je mogoče podatkovno bazo ponovno zagnati brez ročne namestitve in ponovnega nastavljanja vseh parametrov.
 
 ## Obravnavane možnosti
 
-- Docker Compose
-- Ročna namestitev PostgreSQL in Node.js
-- Polno orkestracijsko okolje Kubernetes
+- Docker Compose.
+- Ročna namestitev PostgreSQL.
+- Uporaba izključno oddaljene baze.
 
 ## Sprejeta odločitev in utemeljitev
 
-**Izbrana možnost: Docker Compose.** Odločitev je primerna za TripHarbor, ker z eno konfiguracijo omogoča zagon potrebnih lokalnih storitev, predvsem PostgreSQL, brez nepotrebne zahtevnosti Kubernetes za samostojen MVP.
+Za lokalni zagon PostgreSQL je izbran Docker Compose. Konfiguracija bo zapisana v `compose.yaml`, podatki pa shranjeni v trajnem volumnu, zato ne bo potrebna ročna namestitev baze ob ponovni vzpostavitvi razvojnega okolja. Oddaljena baza bi zahtevala stalno povezavo, ročna namestitev pa več lokalnih nastavitev. Frontend in backend v tej fazi še ne potrebujeta lastnih vsebnikov.
 
-### Posledice
+## Posledice
 
 **Pozitivne:**
 
-- Ponovljiv lokalni zagon in dokumentirana konfiguracija storitev; lažja priprava razvojnega okolja.
+- Ponovljiv lokalni zagon baze in ohranjanje podatkov med ponovnimi zagoni vsebnika.
 
 **Negativne:**
 
-- Potrebna je namestitev Dockerja; konfiguracijo okolja in trajne podatkovne volumne je treba pravilno urediti.
+- Za lokalni razvoj je potrebna namestitev Dockerja, poleg tega je treba pravilno nastaviti podatkovni volumen in okoljske spremenljivke.
 
 ## Povezave
 

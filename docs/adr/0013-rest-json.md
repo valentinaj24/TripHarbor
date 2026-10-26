@@ -6,27 +6,27 @@
 
 ## Kontekst in problem
 
-Frontend mora pridobivati in spreminjati izlete, aktivnosti ter prijave, backend pa mora zagotavljati jasne poti in statusne kode. V MVP ni potrebe po kompleksnem poizvedovalnem jeziku.
+React in Express bosta ločeni aplikaciji. Frontend mora pridobiti objavljene izlete, poslati prijavo, preveriti program in prikazati status zahtev.
 
 ## Obravnavane možnosti
 
-- REST API z JSON
-- GraphQL
-- Neposredna povezava frontenda z bazo
+- REST API z JSON.
+- GraphQL.
+- Strežniško izrisovanje brez ločenega API-ja.
 
 ## Sprejeta odločitev in utemeljitev
 
-**Izbrana možnost: REST API z JSON.** Odločitev je primerna za TripHarbor, ker vire, kot so trips in registrations, naravno predstavimo z HTTP metodami in JSON podatki; API lahko preizkusimo neodvisno od uporabniškega vmesnika.
+Za komunikacijo med React frontendom in Express backendom je izbran REST API z odgovori v obliki JSON. Funkcionalnosti TripHarbora imajo jasne vire, kot so `trips` in `registrations`, ter operacije za pregled, ustvarjanje in spremembo statusa. Končne točke bo mogoče preverjati s Postmanom še pred izdelavo vseh strani. GraphQL bi omogočil prilagodljive poizvedbe, vendar bi za predvideni obseg prinesel dodatno zahtevnost.
 
-### Posledice
+## Posledice
 
 **Pozitivne:**
 
-- Razumljive poti in standardni HTTP statusi; preprosto testiranje.
+- Pregledne končne točke in preprosto testiranje neodvisno od frontenda.
 
 **Negativne:**
 
-- Pri kompleksnih zaslonih je včasih potrebnih več zahtevkov; spremembe API pogodbe zahtevajo uskladitev frontenda.
+- Treba je vzdrževati dogovor o obliki odgovorov in napak; za nekatere poglede bo morda potrebnih več zahtev.
 
 ## Povezave
 
