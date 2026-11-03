@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage'
 import TripsPage from './pages/TripsPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import TripDetailsPage from './pages/TripDetailsPage'
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/trips" element={<TripsPage />} />
+        <Route path="/trips/:id" element={<TripDetailsPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
