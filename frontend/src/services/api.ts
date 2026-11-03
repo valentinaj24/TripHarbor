@@ -83,3 +83,91 @@ export async function getCurrentUser(
     },
   });
 }
+
+export interface Trip {
+  id: string
+  title: string
+  description: string
+  category: string
+  difficulty: string
+  startDate: string
+  endDate: string
+  maxParticipants: number
+  availableSpots: number
+  meetingPoint: string
+  destination: {
+    id: string
+    name: string
+    country: string
+    latitude: number
+    longitude: number
+  }
+  organizer: {
+    id: string
+    firstName: string
+    lastName: string
+  }
+}
+
+export interface TripFilters {
+  search?: string
+  category?: string
+  difficulty?: string
+  startDate?: string
+  endDate?: string
+  sort?: 'date_asc' | 'date_desc' | 'title_asc'
+  page?: number
+  limit?: number
+}
+
+export interface TripsResponse {
+  data: Trip[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
+}
+
+export async function getTrips(
+  filters: TripFilters = {}
+): Promise<TripsResponse> {
+  const params = new URLSearchParams()
+
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== '') {
+      params.set(key, String(value))
+    }
+  })
+
+  const query = params.toString()
+
+  return apiRequest<TripsResponse>(
+    `/api/trips${query ? `?${query}` : ''}`
+  )
+}
+
+export interface TripActivity {
+  id: string
+  title: string
+  description: string | null
+  activityDate: string
+  startTime: string | null
+  locationName: string
+  latitude: number | null
+  longitude: number | null
+  sortOrder: number
+}
+
+export interface TripDetails extends Trip {
+  activities: TripActivity[]
+}
+
+export async function getTripById(
+  id: string
+): Promise<{ data: TripDetails }> {
+  return apiRequest<{ data: TripDetails }>(
+    `/api/trips/${encodeURIComponent(id)}`
+  )
+}
