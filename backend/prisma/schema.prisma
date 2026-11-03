@@ -1,0 +1,123 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  PARTICIPANT
+  ORGANIZER
+  ADMIN
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum TripStatus {
+  DRAFT
+  PENDING
+  PUBLISHED
+  REJECTED
+  CANCELLED
+}
+
+enum RegistrationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+model User {
+  id            String        @id @default(uuid()) @db.Uuid
+  firstName     String        @map("first_name")
+  lastName      String        @map("last_name")
+  email         String        @unique
+  passwordHash  String        @map("password_hash")
+  role          UserRole      @default(PARTICIPANT)
+  accountStatus AccountStatus @default(ACTIVE) @map("account_status")
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  organizedTrips Trip[]         @relation("TripOrganizer")
+  registrations  Registration[]
+
+  @@map("users")
+}
+
+model Destination {
+  id              String  @id @default(uuid()) @db.Uuid
+  name            String
+  country         String
+  latitude        Decimal @db.Decimal(9, 6)
+  longitude       Decimal @db.Decimal(9, 6)
+  externalPlaceId String? @map("external_place_id")
+
+  trips Trip[]
+
+  @@map("destinations")
+}
+
+model Trip {
+  id              String     @id @default(uuid()) @db.Uuid
+  organizerId     String     @map("organizer_id") @db.Uuid
+  destinationId   String     @map("destination_id") @db.Uuid
+  title           String
+  description     String
+  category        String
+  difficulty      String
+  startDate       DateTime   @map("start_date") @db.Date
+  endDate         DateTime   @map("end_date") @db.Date
+  maxParticipants Int        @map("max_participants")
+  status          TripStatus @default(DRAFT)
+  meetingPoint    String     @map("meeting_point")
+  createdAt       DateTime   @default(now()) @map("created_at")
+
+  organizer     User           @relation("TripOrganizer", fields: [organizerId], references: [id])
+  destination   Destination    @relation(fields: [destinationId], references: [id])
+  activities    TripActivity[]
+  registrations Registration[]
+
+  @@index([organizerId])
+  @@index([destinationId])
+  @@index([status])
+  @@map("trips")
+}
+
+model TripActivity {
+  id           String    @id @default(uuid()) @db.Uuid
+  tripId       String    @map("trip_id") @db.Uuid
+  title        String
+  description  String?
+  activityDate DateTime  @map("activity_date") @db.Date
+  startTime    DateTime? @map("start_time") @db.Time(0)
+  locationName String    @map("location_name")
+  latitude     Decimal?  @db.Decimal(9, 6)
+  longitude    Decimal?  @db.Decimal(9, 6)
+  sortOrder    Int       @map("sort_order")
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@map("trip_activities")
+}
+
+model Registration {
+  id           String             @id @default(uuid()) @db.Uuid
+  tripId       String             @map("trip_id") @db.Uuid
+  userId       String             @map("user_id") @db.Uuid
+  status       RegistrationStatus @default(PENDING)
+  registeredAt DateTime           @default(now()) @map("registered_at")
+  reviewedAt   DateTime?          @map("reviewed_at")
+
+  trip Trip @relation(fields: [tripId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([tripId, userId])
+  @@index([userId])
+  @@map("registrations")
+}
