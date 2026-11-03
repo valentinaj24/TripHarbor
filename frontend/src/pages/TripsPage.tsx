@@ -14,6 +14,8 @@ import {
   ChevronRight,
   RefreshCw,
   UserRound,
+  LayoutGrid,
+  Map as MapIcon,
 } from 'lucide-react'
 import {
   getTrips,
@@ -21,6 +23,7 @@ import {
   type TripFilters,
 } from '../services/api'
 import { Link } from 'react-router-dom'
+import TripMap from '../components/TripMap'
 
 const categories = [
   'City Break',
@@ -125,7 +128,7 @@ function TripCard({ trip }: { trip: Trip }) {
                   : 'bg-emerald-50 text-emerald-700'
               }`}
             >
-              {full ? 'No spots left' : 'Open for registration'}
+              {full ? 'No spots left' : 'Spots available'}
             </span>
 
             <Link
@@ -160,6 +163,19 @@ export default function TripsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
+  const [viewMode, setViewMode] = useState<'grid' | 'map'>(() => {
+  const saved = localStorage.getItem('tripharbor-view-mode')
+
+    return saved === 'grid' || saved === 'map'
+        ? saved
+        : 'map'
+    })
+    useEffect(() => {
+    localStorage.setItem('tripharbor-view-mode', viewMode)
+    }, [viewMode])
+  const [mapTrips, setMapTrips] = useState<Trip[]>([])
+  const [mapLoading, setMapLoading] = useState(false)
+  const [mapError, setMapError] = useState('')
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -226,6 +242,52 @@ export default function TripsPage() {
     page,
     reloadKey,
   ])
+
+  useEffect(() => {
+    if (viewMode !== 'map') return
+
+    let active = true
+
+    async function loadMapTrips() {
+      setMapLoading(true)
+      setMapError('')
+
+      const filters: TripFilters = {
+        search: debouncedSearch,
+        category,
+        difficulty,
+        startDate,
+        endDate,
+        sort,
+        limit: 20,
+      }
+
+      try {
+        const first = await getTrips({ ...filters, page: 1 })
+        const allTrips = [...first.data]
+
+        for (let current = 2; current <= first.pagination.totalPages; current++) {
+          const result = await getTrips({ ...filters, page: current })
+          if (!active) return
+          allTrips.push(...result.data)
+        }
+
+        if (active) setMapTrips(allTrips)
+      } catch (err) {
+        if (!active) return
+        setMapTrips([])
+        setMapError(err instanceof Error ? err.message : 'Unable to load map destinations.')
+      } finally {
+        if (active) setMapLoading(false)
+      }
+    }
+
+    void loadMapTrips()
+
+    return () => {
+      active = false
+    }
+  }, [viewMode, debouncedSearch, category, difficulty, startDate, endDate, sort, reloadKey])
 
   function updateSearch(value: string) {
     setSearch(value)
@@ -430,9 +492,38 @@ export default function TripsPage() {
             </p>
           </div>
 
-          <label className="flex items-center gap-3">
-            <span className="text-sm font-medium text-slate-500">
-              Sort by
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1" aria-label="Trip view">
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                aria-pressed={viewMode === 'grid'}
+                className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                  viewMode === 'grid'
+                    ? 'bg-white text-teal-700 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <LayoutGrid size={16} />
+                Grid View
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('map')}
+                aria-pressed={viewMode === 'map'}
+                className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                  viewMode === 'map'
+                    ? 'bg-white text-teal-700 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <MapIcon size={16} />
+                Map View
+              </button>
+            </div>
+            <label className="flex items-center gap-3">
+              <span className="text-sm font-medium text-slate-500">
+                Sort by
             </span>
 
             <select
@@ -452,9 +543,33 @@ export default function TripsPage() {
               <option value="date_desc">Date: Latest</option>
               <option value="title_asc">Name: A to Z</option>
             </select>
-          </label>
+            </label>
+          </div>
         </div>
 
+        {viewMode === 'map' ? (
+          mapLoading ? (
+            <div className="rounded-3xl border border-slate-200 bg-white py-20 text-center text-slate-500">
+              Loading map destinations...
+            </div>
+          ) : mapError ? (
+            <div className="rounded-3xl border border-red-100 bg-white px-6 py-16 text-center">
+              <h3 className="text-xl font-bold text-slate-900">We couldn't load the map</h3>
+              <p className="mt-3 text-sm text-slate-500">{mapError}</p>
+              <button
+                type="button"
+                onClick={() => setReloadKey((key) => key + 1)}
+                className="mt-6 inline-flex items-center gap-2 rounded-xl bg-teal-700 px-6 py-3 text-sm font-semibold text-white hover:bg-teal-800"
+              >
+                <RefreshCw size={17} />
+                Try Again
+              </button>
+            </div>
+          ) : (
+            <TripMap trips={mapTrips} />
+          )
+        ) : (
+          <>
         {loading ? (
           <div
             className="grid gap-6 md:grid-cols-2 xl:grid-cols-3"
@@ -556,6 +671,9 @@ export default function TripsPage() {
               <ChevronRight size={17} />
             </button>
           </div>
+        )}
+
+          </>
         )}
 
         <div className="mt-16 rounded-3xl bg-teal-800 px-7 py-10 text-white sm:px-10">
