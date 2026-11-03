@@ -1,15 +1,32 @@
 
 import { useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
-import { Compass, Menu, X, ArrowUpRight } from 'lucide-react'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
+import {
+  Compass,
+  Menu,
+  X,
+  ArrowUpRight,
+  LogOut,
+  UserRound,
+} from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
+
+  const navigate = useNavigate()
+  const { user, signOut, loading } = useAuth()
 
   const links = [
     { to: '/', label: 'Home' },
     { to: '/trips', label: 'Explore Trips' },
   ]
+
+  function handleLogout() {
+    signOut()
+    setMenuOpen(false)
+    navigate('/login', { replace: true })
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-100 bg-white/95 backdrop-blur-xl">
@@ -22,6 +39,7 @@ export default function Navbar() {
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-700 text-white">
             <Compass size={23} strokeWidth={2.2} />
           </div>
+
           <span className="text-2xl font-extrabold tracking-tight text-slate-900">
             Trip<span className="text-teal-700">Harbor</span>
           </span>
@@ -47,18 +65,39 @@ export default function Navbar() {
         </div>
 
         <div className="hidden items-center gap-5 md:flex">
-          <Link
-            to="/login"
-            className="text-sm font-semibold text-slate-700 hover:text-teal-700"
-          >
-            Log In
-          </Link>
-          <Link
-            to="/register"
-            className="inline-flex items-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800"
-          >
-            Sign Up <ArrowUpRight size={16} />
-          </Link>
+          {loading ? null : user ? (
+            <>
+              <div className="flex items-center gap-2 rounded-xl bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-800">
+                <UserRound size={18} />
+                <span>{user.firstName}</span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+              >
+                <LogOut size={17} />
+                Log Out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="text-sm font-semibold text-slate-700 hover:text-teal-700"
+              >
+                Log In
+              </Link>
+
+              <Link
+                to="/register"
+                className="inline-flex items-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800"
+              >
+                Sign Up <ArrowUpRight size={16} />
+              </Link>
+            </>
+          )}
         </div>
 
         <button
@@ -74,11 +113,7 @@ export default function Navbar() {
 
       {menuOpen && (
         <div className="space-y-1 border-t border-slate-100 bg-white px-5 py-4 md:hidden">
-          {[
-            ...links,
-            { to: '/login', label: 'Log In' },
-            { to: '/register', label: 'Sign Up' },
-          ].map((link) => (
+          {links.map((link) => (
             <Link
               key={link.to}
               to={link.to}
@@ -88,6 +123,44 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
+
+          {loading ? null : user ? (
+            <>
+              <div className="flex items-center gap-2 rounded-lg bg-teal-50 px-3 py-3 text-sm font-semibold text-teal-800">
+                <UserRound size={18} />
+                <span>
+                  {user.firstName} {user.lastName}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex w-full items-center gap-2 rounded-lg px-3 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50"
+              >
+                <LogOut size={18} />
+                Log Out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                onClick={() => setMenuOpen(false)}
+                className="block rounded-lg px-3 py-3 text-sm font-semibold text-slate-700 hover:bg-teal-50"
+              >
+                Log In
+              </Link>
+
+              <Link
+                to="/register"
+                onClick={() => setMenuOpen(false)}
+                className="block rounded-lg bg-teal-700 px-3 py-3 text-sm font-semibold text-white"
+              >
+                Sign Up
+              </Link>
+            </>
+          )}
         </div>
       )}
     </header>
