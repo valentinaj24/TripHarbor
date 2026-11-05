@@ -11,6 +11,7 @@ import {
   Heart,
   ArrowUpRight,
 } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
 
 const features = [
   {
@@ -34,6 +35,7 @@ const features = [
 ]
 
 export default function HomePage() {
+    const { user } = useAuth()
   return (
     <main>
       <section className="relative flex min-h-[610px] items-center overflow-hidden bg-slate-900">
@@ -73,11 +75,23 @@ export default function HomePage() {
               </Link>
 
               <Link
-                to="/register"
+                to={
+                    !user
+                    ? '/register'
+                    : user.role === 'ORGANIZER'
+                        ? '/organizer/trips/new'
+                        : '/my-trips'
+                }
                 className="inline-flex items-center gap-2 rounded-xl border border-white/35 bg-white/10 px-7 py-4 font-semibold text-white backdrop-blur-md transition hover:bg-white/20"
-              >
-                Join Us <ArrowUpRight size={18} />
-              </Link>
+                >
+                {!user
+                    ? 'Join Us'
+                    : user.role === 'ORGANIZER'
+                    ? 'Create a Trip'
+                    : 'My Trips'}
+
+                <ArrowUpRight size={18} />
+                </Link>
             </div>
           </div>
         </div>

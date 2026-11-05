@@ -8,7 +8,7 @@ import authRoutes from './routes/auth.routes.js'
 import { tripsRouter } from './routes/trips.routes.js'
 import { destinationsRouter } from './routes/destinations.routes.js'
 import { activitiesRouter } from './routes/activities.routes.js'
-import { registrationsRouter } from './routes/registrations.routes.js'
+import { registrationsRouter,myTripsRouter, } from './routes/registrations.routes.js'
 
 export const app = express()
 
@@ -28,6 +28,7 @@ app.use('/api/trips', tripsRouter)
 app.use('/api/trips', activitiesRouter)
 app.use('/api/destinations', destinationsRouter)
 app.use('/api/trips', registrationsRouter)
+app.use('/api', myTripsRouter)
 
 app.use(notFound)
 app.use(errorHandler)

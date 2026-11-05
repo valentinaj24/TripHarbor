@@ -444,6 +444,16 @@ const hasActiveRegistration =
         {registrationSaving ? 'Please wait...' : 'Cancel Registration'}
       </button>
     </>
+    ) : registration?.status === 'REJECTED' ? (
+  <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-center">
+    <p className="font-bold text-red-700">
+      Registration Rejected
+    </p>
+    <p className="mt-2 text-sm text-red-600">
+      Your registration was not approved by the organizer.
+      You cannot apply again for this trip.
+    </p>
+  </div>
   ) : isFull ? (
     <p className="rounded-xl bg-red-50 p-4 text-center text-sm font-semibold text-red-700">
       This trip is fully booked.
@@ -461,11 +471,7 @@ const hasActiveRegistration =
         </p>
       )}
 
-      {registration?.status === 'REJECTED' && (
-        <p className="text-center text-sm text-slate-500">
-          Your previous registration was not accepted.
-        </p>
-      )}
+      
 
       <button
         type="button"
