@@ -498,3 +498,62 @@ export async function getTripActivityWarnings(
     },
   })
 }
+
+export type RegistrationStatus =
+  | 'PENDING'
+  | 'ACCEPTED'
+  | 'REJECTED'
+  | 'CANCELLED'
+
+export interface TripRegistration {
+  id: string
+  status: RegistrationStatus
+  registeredAt: string
+}
+
+function registrationAuthHeaders() {
+  const token = sessionStorage.getItem('tripharbor_token')
+
+  if (!token) {
+    throw new Error('Please log in to register for a trip.')
+  }
+
+  return {
+    Authorization: `Bearer ${token}`,
+  }
+}
+
+export function getMyTripRegistration(tripId: string) {
+  return apiRequest<{ data: TripRegistration | null }>(
+    `/api/trips/${encodeURIComponent(tripId)}/registrations/me`,
+    {
+      headers: registrationAuthHeaders(),
+    }
+  )
+}
+
+export function joinTrip(tripId: string) {
+  return apiRequest<{
+    message: string
+    data: TripRegistration
+  }>(
+    `/api/trips/${encodeURIComponent(tripId)}/registrations`,
+    {
+      method: 'POST',
+      headers: registrationAuthHeaders(),
+    }
+  )
+}
+
+export function cancelTripRegistration(tripId: string) {
+  return apiRequest<{
+    message: string
+    data: TripRegistration
+  }>(
+    `/api/trips/${encodeURIComponent(tripId)}/registrations/cancel`,
+    {
+      method: 'PATCH',
+      headers: registrationAuthHeaders(),
+    }
+  )
+}

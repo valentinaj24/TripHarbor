@@ -10,12 +10,15 @@ import {
   Compass,
   Clock3,
   Mountain,
-  ShieldCheck,
   ArrowRight,
 } from 'lucide-react'
 import {
   getTripById,
+   getMyTripRegistration,
+  joinTrip,
+  cancelTripRegistration,
   type TripDetails,
+  type TripRegistration,
 } from '../services/api'
 import { useAuth } from '../context/AuthContext'
 
@@ -35,6 +38,11 @@ export default function TripDetailsPage() {
   const [trip, setTrip] = useState<TripDetails | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [registration, setRegistration] = useState<TripRegistration | null>(null)
+const [registrationLoading, setRegistrationLoading] = useState(false)
+const [registrationSaving, setRegistrationSaving] = useState(false)
+const [registrationError, setRegistrationError] = useState('')
+const [registrationNotice, setRegistrationNotice] = useState('')
 
   useEffect(() => {
     let active = true
@@ -69,6 +77,96 @@ export default function TripDetailsPage() {
     return () => { active = false }
   }, [id])
 
+  
+useEffect(() => {
+  if (!id || !user || user.role === 'ADMIN') {
+    setRegistration(null)
+    return
+  }
+
+  let active = true
+  setRegistration(null)
+  setRegistrationLoading(true)
+  setRegistrationError('')
+
+  getMyTripRegistration(id)
+    .then((response) => {
+      if (active) setRegistration(response.data)
+    })
+    .catch((err: unknown) => {
+      if (active) {
+        setRegistrationError(
+          err instanceof Error
+            ? err.message
+            : 'Unable to load registration.'
+        )
+      }
+    })
+    .finally(() => {
+      if (active) setRegistrationLoading(false)
+    })
+
+  return () => {
+    active = false
+  }
+}, [id, user?.id, user?.role])
+
+
+async function handleJoinTrip() {
+  if (!id || registrationSaving) return
+
+  setRegistrationSaving(true)
+  setRegistrationError('')
+  setRegistrationNotice('')
+
+  try {
+    const response = await joinTrip(id)
+    setRegistration(response.data)
+    setRegistrationNotice(response.message)
+
+    const updatedTrip = await getTripById(id)
+    setTrip(updatedTrip.data)
+  } catch (err) {
+    setRegistrationError(
+      err instanceof Error
+        ? err.message
+        : 'Unable to join this trip.'
+    )
+  } finally {
+    setRegistrationSaving(false)
+  }
+}
+
+async function handleCancelRegistration() {
+  if (!id || registrationSaving) return
+
+  if (!window.confirm('Are you sure you want to cancel your registration?')) {
+    return
+  }
+
+  setRegistrationSaving(true)
+  setRegistrationError('')
+  setRegistrationNotice('')
+
+  try {
+    const response = await cancelTripRegistration(id)
+    setRegistration(response.data)
+    setRegistrationNotice(response.message)
+
+    const updatedTrip = await getTripById(id)
+    setTrip(updatedTrip.data)
+  } catch (err) {
+    setRegistrationError(
+      err instanceof Error
+        ? err.message
+        : 'Unable to cancel registration.'
+    )
+  } finally {
+    setRegistrationSaving(false)
+  }
+}
+
+
   if (loading) {
     return (
       <main className="flex min-h-[70vh] items-center justify-center bg-slate-50">
@@ -97,8 +195,18 @@ export default function TripDetailsPage() {
     )
   }
 
-  const isParticipant = user?.role === 'PARTICIPANT'
-  const isFull = trip.availableSpots === 0
+  const canRegister =
+  user?.role === 'PARTICIPANT' ||
+  (user?.role === 'ORGANIZER' && user.id !== trip.organizer.id)
+
+const isOwnTrip =
+  user?.role === 'ORGANIZER' && user.id === trip.organizer.id
+
+const isFull = trip.availableSpots === 0
+
+const hasActiveRegistration =
+  registration?.status === 'PENDING' ||
+  registration?.status === 'ACCEPTED'
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -278,30 +386,99 @@ export default function TripDetailsPage() {
               </div>
             </div>
 
-            <div className="mt-7 border-t border-slate-100 pt-6">
-              {isFull ? (
-                <div className="rounded-xl bg-red-50 px-4 py-3 text-center text-sm font-semibold text-red-700">
-                  This trip is fully booked.
-                </div>
-              ) : !user ? (
-                <Link
-                  to="/login"
-                  className="flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 py-4 font-semibold text-white transition hover:bg-teal-800"
-                >
-                  Log In to Join
-                  <ArrowRight size={18} />
-                </Link>
-              ) : isParticipant ? (
-                <div className="rounded-xl bg-teal-50 px-4 py-4 text-center text-sm font-medium leading-6 text-teal-800">
-                  Registration will be available soon.
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-4 text-sm text-slate-600">
-                  <ShieldCheck size={18} />
-                  Trip registration is for participants only.
-                </div>
-              )}
-            </div>
+            
+<div className="mt-7 space-y-4 border-t border-slate-100 pt-6">
+  {registrationError && (
+    <p role="alert" className="rounded-xl bg-red-50 p-4 text-sm text-red-700">
+      {registrationError}
+    </p>
+  )}
+
+  {registrationNotice && (
+    <p role="status" className="rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">
+      {registrationNotice}
+    </p>
+  )}
+
+  {!user ? (
+    <Link
+      to="/login"
+      className="flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 py-4 font-semibold text-white hover:bg-teal-800"
+    >
+      Log In to Join
+      <ArrowRight size={18} />
+    </Link>
+  ) : isOwnTrip ? (
+    <p className="rounded-xl bg-slate-100 p-4 text-center text-sm text-slate-600">
+      You are the organizer of this trip.
+    </p>
+  ) : !canRegister ? (
+    <p className="rounded-xl bg-slate-100 p-4 text-center text-sm text-slate-600">
+      Trip registration is not available for your account.
+    </p>
+  ) : registrationLoading ? (
+    <p className="py-4 text-center text-sm text-slate-500">
+      Loading your registration...
+    </p>
+  ) : hasActiveRegistration ? (
+    <>
+      <div className="rounded-xl bg-teal-50 p-4 text-center">
+        <p className="font-bold text-teal-800">
+          {registration?.status === 'ACCEPTED'
+            ? 'Registration Accepted'
+            : 'Pending Approval'}
+        </p>
+        <p className="mt-2 text-sm text-teal-700">
+          {registration?.status === 'ACCEPTED'
+            ? 'Your place on this trip is confirmed.'
+            : 'Your registration is waiting for organizer approval.'}
+        </p>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => void handleCancelRegistration()}
+        disabled={registrationSaving}
+        className="w-full rounded-xl border border-red-200 px-5 py-4 font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+      >
+        {registrationSaving ? 'Please wait...' : 'Cancel Registration'}
+      </button>
+    </>
+  ) : isFull ? (
+    <p className="rounded-xl bg-red-50 p-4 text-center text-sm font-semibold text-red-700">
+      This trip is fully booked.
+    </p>
+  ) : new Date(trip.startDate).getTime() <
+      new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00.000Z').getTime() ? (
+    <p className="rounded-xl bg-slate-100 p-4 text-center text-sm text-slate-600">
+      Registration for this trip is closed.
+    </p>
+  ) : (
+    <>
+      {registration?.status === 'CANCELLED' && (
+        <p className="text-center text-sm text-slate-500">
+          You cancelled your previous registration.
+        </p>
+      )}
+
+      {registration?.status === 'REJECTED' && (
+        <p className="text-center text-sm text-slate-500">
+          Your previous registration was not accepted.
+        </p>
+      )}
+
+      <button
+        type="button"
+        onClick={() => void handleJoinTrip()}
+        disabled={registrationSaving}
+        className="w-full rounded-xl bg-teal-700 px-5 py-4 font-semibold text-white hover:bg-teal-800 disabled:opacity-50"
+      >
+        {registrationSaving ? 'Submitting...' : 'Join Trip'}
+      </button>
+    </>
+  )}
+</div>
+
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
