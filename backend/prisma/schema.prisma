@@ -68,6 +68,7 @@ model Trip {
   destinationId   String     @map("destination_id") @db.Uuid
   title           String
   description     String
+  coverUrl        String?    @map("cover_url")
   category        String
   difficulty      String
   startDate       DateTime   @map("start_date") @db.Date
