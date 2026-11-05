@@ -7,7 +7,7 @@ import {
   type AuthenticatedRequest,
 } from '../middleware/auth.js'
 import { authorize } from '../middleware/authorize.js'
-import type { TripActivity } from '@prisma/client'
+import type { Prisma, TripActivity } from '@prisma/client'
 
 export const activitiesRouter = Router()
 
@@ -63,6 +63,23 @@ function formatActivity(activity: TripActivity) {
   }
 }
 
+
+// Keep positions contiguous (1, 2, 3...) for every date.
+async function normalizeActivityOrders(tx: Prisma.TransactionClient, tripId: string) {
+  const activities = await tx.tripActivity.findMany({
+    where: { tripId },
+    orderBy: [{ activityDate: 'asc' }, { sortOrder: 'asc' }, { startTime: 'asc' }, { id: 'asc' }],
+  })
+  const counters = new Map<string, number>()
+  for (const activity of activities) {
+    const day = activity.activityDate.toISOString().slice(0, 10)
+    const position = (counters.get(day) ?? 0) + 1
+    counters.set(day, position)
+    if (activity.sortOrder !== position) {
+      await tx.tripActivity.update({ where: { id: activity.id }, data: { sortOrder: position } })
+    }
+  }
+}
 
 async function getEditableTrip(tripId: string, userId: string) {
   return prisma.trip.findFirst({
@@ -219,6 +236,76 @@ activitiesRouter.patch(
 )
 
 
+// GET – non-blocking itinerary warnings for an organizer's trip
+activitiesRouter.get(
+  '/:tripId/activities/warnings',
+  authenticate,
+  authorize('ORGANIZER'),
+  async (req: AuthenticatedRequest, res, next) => {
+    try {
+      const tripId = req.params.tripId
+      if (typeof tripId !== 'string' || !uuidSchema.safeParse(tripId).success) {
+        return res.status(400).json({ message: 'Invalid trip ID.' })
+      }
+      const trip = await prisma.trip.findFirst({
+        where: { id: tripId, organizerId: req.user!.id },
+      })
+      if (!trip) return res.status(404).json({ message: 'Trip not found.' })
+
+      const activities = await prisma.tripActivity.findMany({
+        where: { tripId },
+        orderBy: [{ activityDate: 'asc' }, { sortOrder: 'asc' }, { id: 'asc' }],
+      })
+      const warnings: Array<{
+        code: 'DUPLICATE_TIME' | 'DUPLICATE_ORDER' | 'OUTSIDE_TRIP_DATES'
+        message: string
+        activityIds: string[]
+      }> = []
+      const timeGroups = new Map<string, TripActivity[]>()
+      const orderGroups = new Map<string, TripActivity[]>()
+
+      for (const activity of activities) {
+        const date = activity.activityDate.toISOString().slice(0, 10)
+        if (activity.activityDate < trip.startDate || activity.activityDate > trip.endDate) {
+          warnings.push({
+            code: 'OUTSIDE_TRIP_DATES',
+            message: `Activity "${activity.title}" is outside the trip dates.`,
+            activityIds: [activity.id],
+          })
+        }
+        const orderKey = `${date}|${activity.sortOrder}`
+        orderGroups.set(orderKey, [...(orderGroups.get(orderKey) ?? []), activity])
+        const time = fromPrismaTime(activity.startTime)
+        if (time) {
+          const timeKey = `${date}|${time}`
+          timeGroups.set(timeKey, [...(timeGroups.get(timeKey) ?? []), activity])
+        }
+      }
+      for (const [key, group] of timeGroups) {
+        if (group.length < 2) continue
+        const [date, time] = key.split('|')
+        warnings.push({
+          code: 'DUPLICATE_TIME',
+          message: `${group.length} activities on ${date} start at ${time}. Check for a scheduling conflict.`,
+          activityIds: group.map((activity) => activity.id),
+        })
+      }
+      for (const [key, group] of orderGroups) {
+        if (group.length < 2) continue
+        const [date, order] = key.split('|')
+        warnings.push({
+          code: 'DUPLICATE_ORDER',
+          message: `${group.length} activities on ${date} have order ${order}.`,
+          activityIds: group.map((activity) => activity.id),
+        })
+      }
+      return res.json({ warnings })
+    } catch (error) {
+      next(error)
+    }
+  }
+)
+
 // POST – add a new activity
 activitiesRouter.post(
   '/:tripId/activities',
@@ -258,18 +345,22 @@ activitiesRouter.post(
         })
       }
 
-      const activity = await prisma.tripActivity.create({
-        data: {
-          tripId,
-          title: data.title,
-          description: data.description ?? null,
-          activityDate,
-          startTime: toPrismaTime(data.startTime),
-          locationName: data.locationName,
-          latitude: data.latitude ?? null,
-          longitude: data.longitude ?? null,
-          sortOrder: data.sortOrder,
-        },
+      const activity = await prisma.$transaction(async (tx) => {
+        const created = await tx.tripActivity.create({
+          data: {
+            tripId,
+            title: data.title,
+            description: data.description ?? null,
+            activityDate,
+            startTime: toPrismaTime(data.startTime),
+            locationName: data.locationName,
+            latitude: data.latitude ?? null,
+            longitude: data.longitude ?? null,
+            sortOrder: data.sortOrder,
+          },
+        })
+        await normalizeActivityOrders(tx, tripId)
+        return tx.tripActivity.findUniqueOrThrow({ where: { id: created.id } })
       })
 
       return res.status(201).json({
@@ -342,9 +433,10 @@ activitiesRouter.patch(
         })
       }
 
-      const activity = await prisma.tripActivity.update({
-        where: { id: activityId },
-        data: {
+      const activity = await prisma.$transaction(async (tx) => {
+        const updated = await tx.tripActivity.update({
+          where: { id: activityId },
+          data: {
           ...(data.title !== undefined && { title: data.title }),
           ...(data.description !== undefined && {
             description: data.description,
@@ -362,10 +454,15 @@ activitiesRouter.patch(
           ...(data.longitude !== undefined && {
             longitude: data.longitude,
           }),
-          ...(data.sortOrder !== undefined && {
-            sortOrder: data.sortOrder,
-          }),
+          ...((data.activityDate !== undefined &&
+            data.activityDate !== existing.activityDate.toISOString().slice(0, 10))
+            ? { sortOrder: 10000 }
+            : data.sortOrder !== undefined ? { sortOrder: data.sortOrder } : {}),
         },
+      })
+
+        await normalizeActivityOrders(tx, tripId)
+        return tx.tripActivity.findUniqueOrThrow({ where: { id: updated.id } })
       })
 
       return res.json({

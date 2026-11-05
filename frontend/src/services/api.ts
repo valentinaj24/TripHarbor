@@ -480,3 +480,21 @@ export async function reorderTripActivities(
     }
   )
 }
+
+export interface ActivityWarning {
+  code: 'DUPLICATE_TIME' | 'DUPLICATE_ORDER' | 'OUTSIDE_TRIP_DATES'
+  message: string
+  activityIds: string[]
+}
+
+export async function getTripActivityWarnings(
+  tripId: string
+): Promise<{ warnings: ActivityWarning[] }> {
+  const token = sessionStorage.getItem('tripharbor_token')
+
+  return apiRequest(`/api/trips/${tripId}/activities/warnings`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
