@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { ArrowDown, ArrowUp, CalendarDays, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { AlertTriangle, ArrowDown, ArrowUp, CalendarDays, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react'
 import PlaceAutocomplete from './PlaceAutocomplete'
 import {
   getTripActivities,
@@ -7,6 +7,8 @@ import {
   updateTripActivity,
   deleteTripActivity,
   reorderTripActivities,
+  getTripActivityWarnings,
+  type ActivityWarning,
   type ActivityFormData,
   type TripItineraryActivity,
   type PlaceSuggestion,
@@ -79,6 +81,7 @@ export default function TripItineraryEditor({
   const [form, setForm] = useState<FormState>(() => emptyForm(startDate))
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [serverWarnings, setServerWarnings] = useState<ActivityWarning[]>([])
 
   useEffect(() => {
     if (!tripId) {
@@ -88,7 +91,16 @@ export default function TripItineraryEditor({
     let active = true
     setLoading(true)
     getTripActivities(tripId)
-      .then((result) => { if (active) setSavedActivities(result.data) })
+      .then(async (result) => {
+        if (!active) return
+        setSavedActivities(result.data)
+        try {
+          const response = await getTripActivityWarnings(tripId)
+          if (active) setServerWarnings(response.warnings)
+        } catch (err) {
+          if (active) setError(err instanceof Error ? err.message : 'Unable to load itinerary warnings.')
+        }
+      })
       .catch((err: unknown) => {
         if (active) setError(err instanceof Error ? err.message : 'Unable to load activities.')
       })
@@ -101,6 +113,46 @@ export default function TripItineraryEditor({
     : draftActivities.map((data, index) => ({ data, index }))
   const ordered = sortItems(activities)
   const dates = [...new Set(ordered.map((item) => dateOnly(item.data.activityDate)))]
+  const draftWarnings: ActivityWarning[] = []
+  if (!tripId) {
+    const times = new Map<string, number>()
+    const orders = new Map<string, number>()
+    for (const item of ordered) {
+      const day = dateOnly(item.data.activityDate)
+      if (startDate && endDate && (day < startDate || day > endDate)) {
+        draftWarnings.push({
+          code: 'OUTSIDE_TRIP_DATES',
+          message: `Activity "${item.data.title}" is outside the trip dates.`,
+          activityIds: [],
+        })
+      }
+      const orderKey = `${day}|${item.data.sortOrder}`
+      orders.set(orderKey, (orders.get(orderKey) ?? 0) + 1)
+      if (item.data.startTime) {
+        const key = `${day}|${item.data.startTime}`
+        times.set(key, (times.get(key) ?? 0) + 1)
+      }
+    }
+    for (const [key, count] of times) {
+      if (count < 2) continue
+      const [day, time] = key.split('|')
+      draftWarnings.push({
+        code: 'DUPLICATE_TIME',
+        message: `${count} activities on ${day} start at ${time}. Check for a scheduling conflict.`,
+        activityIds: [],
+      })
+    }
+    for (const [key, count] of orders) {
+      if (count < 2) continue
+      const [day, position] = key.split('|')
+      draftWarnings.push({
+        code: 'DUPLICATE_ORDER',
+        message: `${count} activities on ${day} have order ${position}.`,
+        activityIds: [],
+      })
+    }
+  }
+  const warnings = tripId ? serverWarnings : draftWarnings
 
   function startAdding() {
     setEditingIndex(null)
@@ -140,6 +192,8 @@ export default function TripItineraryEditor({
     if (!tripId) return
     const response = await getTripActivities(tripId)
     setSavedActivities(response.data)
+    const warnings = await getTripActivityWarnings(tripId)
+    setServerWarnings(warnings.warnings)
   }
 
   async function saveActivity(event: FormEvent<HTMLFormElement>) {
@@ -250,6 +304,8 @@ export default function TripItineraryEditor({
         if (ids.some((id) => !id)) throw new Error('Missing activity ID.')
         const response = await reorderTripActivities(tripId, ids as string[])
         setSavedActivities(response.data)
+        const warnings = await getTripActivityWarnings(tripId)
+        setServerWarnings(warnings.warnings)
       } else {
         if (!onDraftActivitiesChange) throw new Error('Draft itinerary is not configured.')
         onDraftActivitiesChange(renumber(next.map((item) => item.data)))
@@ -278,6 +334,18 @@ export default function TripItineraryEditor({
       {!tripId && <p className="mt-3 text-sm text-slate-500">Activities will be saved together with your trip when you click Save as Draft.</p>}
       {error && <p role="alert" className="mt-5 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
       {notice && <p role="status" className="mt-5 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}
+      {warnings.length > 0 && (
+        <div role="status" className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <div className="mb-2 flex items-center gap-2 font-semibold">
+            <AlertTriangle size={18} /> Itinerary warnings
+          </div>
+          <ul className="list-disc space-y-1 pl-5">
+            {warnings.map((warning, index) => (
+              <li key={`${warning.code}-${index}`}>{warning.message}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {showForm && (
         <form id="trip-activity-form" onSubmit={(event) => void saveActivity(event)} className="mt-6 space-y-4 rounded-xl border border-teal-100 bg-teal-50/40 p-5">
