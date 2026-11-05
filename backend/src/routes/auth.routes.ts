@@ -178,6 +178,52 @@ router.get('/me', authenticate, async (req: AuthenticatedRequest, res, next) => 
 });
 
 
+const updateProfileSchema = z.object({
+  firstName: z.string().trim().min(2).max(100),
+  lastName: z.string().trim().min(2).max(100),
+}).strict()
+
+router.patch(
+  '/me',
+  authenticate,
+  async (req: AuthenticatedRequest, res, next) => {
+    try {
+      const parsed = updateProfileSchema.safeParse(req.body)
+
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: 'Invalid profile data.',
+          errors: parsed.error.flatten().fieldErrors,
+        })
+      }
+
+      const user = await prisma.user.update({
+        where: { id: req.user!.id },
+        data: {
+          firstName: parsed.data.firstName,
+          lastName: parsed.data.lastName,
+        },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          role: true,
+          accountStatus: true,
+          createdAt: true,
+        },
+      })
+
+      return res.json({
+        message: 'Profile updated successfully.',
+        user,
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+)
+
 
 
 export default router;

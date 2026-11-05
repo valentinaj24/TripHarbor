@@ -21,6 +21,10 @@ const links = [
   { to: '/', label: 'Home' },
   { to: '/trips', label: 'Explore Trips' },
 
+  ...(user
+    ? [{ to: '/my-trips', label: 'My Trips' }]
+    : []),
+
   ...(user?.role === 'ORGANIZER'
     ? [{ to: '/organizer', label: 'Dashboard' }]
     : []),
@@ -75,10 +79,13 @@ const links = [
         <div className="hidden items-center gap-5 md:flex">
           {loading ? null : user ? (
             <>
-              <div className="flex items-center gap-2 rounded-xl bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-800">
+              <Link
+                to="/profile"
+                className="flex items-center gap-2 rounded-xl bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-800 transition hover:bg-teal-100"
+                >
                 <UserRound size={18} />
                 <span>{user.firstName}</span>
-              </div>
+                </Link>
 
               <button
                 type="button"
@@ -134,12 +141,16 @@ const links = [
 
           {loading ? null : user ? (
             <>
-              <div className="flex items-center gap-2 rounded-lg bg-teal-50 px-3 py-3 text-sm font-semibold text-teal-800">
+              <Link
+                to="/profile"
+                onClick={() => setMenuOpen(false)}
+                className="flex items-center gap-2 rounded-lg bg-teal-50 px-3 py-3 text-sm font-semibold text-teal-800"
+                >
                 <UserRound size={18} />
                 <span>
-                  {user.firstName} {user.lastName}
+                    {user.firstName} {user.lastName}
                 </span>
-              </div>
+                </Link>
 
               <button
                 type="button"

@@ -9,6 +9,9 @@ import RegisterPage from './pages/RegisterPage'
 import TripDetailsPage from './pages/TripDetailsPage'
 import OrganizerDashboard from './pages/OrganizerDashboard'
 import CreateTripPage from './pages/CreateTripPage'
+import TripRegistrationsPage from './pages/TripRegistrationsPage'
+import MyTripsPage from './pages/MyTripsPage'
+import ProfilePage from './pages/ProfilePage'
 
 export default function App() {
   return (
@@ -21,6 +24,35 @@ export default function App() {
         <Route path="/trips/:id" element={<TripDetailsPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route
+          path="/organizer/trips/:id/registrations"
+          element={
+            <ProtectedRoute allowedRoles={['ORGANIZER']}>
+              <TripRegistrationsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/my-trips"
+          element={
+            <ProtectedRoute
+              allowedRoles={['PARTICIPANT', 'ORGANIZER', 'ADMIN']}
+            >
+              <MyTripsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute
+              allowedRoles={['PARTICIPANT', 'ORGANIZER', 'ADMIN']}
+            >
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/organizer"

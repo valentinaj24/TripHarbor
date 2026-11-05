@@ -557,3 +557,133 @@ export function cancelTripRegistration(tripId: string) {
     }
   )
 }
+
+export interface OrganizerRegistration {
+  id: string
+  status: RegistrationStatus
+  registeredAt: string
+  reviewedAt: string | null
+  user: {
+    id: string
+    firstName: string
+    lastName: string
+    email: string
+  }
+}
+
+export interface TripRegistrationManagement {
+  trip: {
+    id: string
+    title: string
+    status: TripStatus
+    maxParticipants: number
+    acceptedCount: number
+    pendingCount: number
+    availableSpots: number
+  }
+  registrations: OrganizerRegistration[]
+}
+
+export function getTripRegistrations(tripId: string) {
+  return apiRequest<{ data: TripRegistrationManagement }>(
+    `/api/trips/${encodeURIComponent(tripId)}/registrations`,
+    {
+      headers: registrationAuthHeaders(),
+    }
+  )
+}
+
+export function reviewTripRegistration(
+  tripId: string,
+  registrationId: string,
+  status: 'ACCEPTED' | 'REJECTED'
+) {
+  return apiRequest<{
+    message: string
+    data: OrganizerRegistration
+  }>(
+    `/api/trips/${encodeURIComponent(tripId)}/registrations/${encodeURIComponent(registrationId)}/status`,
+    {
+      method: 'PATCH',
+      headers: registrationAuthHeaders(),
+      body: JSON.stringify({ status }),
+    }
+  )
+}
+export type MyTripRegistrationStatus =
+  | 'PENDING'
+  | 'ACCEPTED'
+  | 'REJECTED'
+  | 'CANCELLED'
+
+export interface MyTripRegistration {
+  id: string
+  status: MyTripRegistrationStatus
+  registeredAt: string
+  reviewedAt: string | null
+  trip: {
+    id: string
+    title: string
+    description: string
+    coverUrl: string | null
+    category: string
+    startDate: string
+    endDate: string
+    meetingPoint: string
+    status: string
+    destination: {
+      name: string
+      country: string
+    }
+    organizer: {
+      firstName: string
+      lastName: string
+    }
+  }
+}
+
+export interface UserProfile extends AuthUser {
+  accountStatus: 'ACTIVE' | 'SUSPENDED'
+  createdAt: string
+}
+
+export function getMyTripRegistrations() {
+  const token = sessionStorage.getItem('tripharbor_token')
+
+  return apiRequest<{ data: MyTripRegistration[] }>(
+    '/api/users/me/registrations',
+    {
+      headers: {
+        Authorization: `Bearer ${token ?? ''}`,
+      },
+    }
+  )
+}
+
+export function getMyProfile() {
+  const token = sessionStorage.getItem('tripharbor_token')
+
+  return apiRequest<{ user: UserProfile }>('/api/auth/me', {
+    headers: {
+      Authorization: `Bearer ${token ?? ''}`,
+    },
+  })
+}
+
+export function updateMyProfile(data: {
+  firstName: string
+  lastName: string
+}) {
+  const token = sessionStorage.getItem('tripharbor_token')
+
+  return apiRequest<{
+    message: string
+    user: UserProfile
+  }>('/api/auth/me', {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token ?? ''}`,
+    },
+    body: JSON.stringify(data),
+  })
+}

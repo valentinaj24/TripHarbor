@@ -408,6 +408,16 @@ export default function OrganizerDashboard() {
                           </span>
                         )}
                       </div>
+                      {trip.status === 'PUBLISHED' && (
+                        <Link
+                            to={`/organizer/trips/${trip.id}/registrations`}
+                            className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-800 transition hover:bg-teal-100"
+                        >
+                            <Users size={17} />
+                            Manage Registrations
+                            <ArrowRight size={16} />
+                        </Link>
+                        )}
 
                       {canEdit && (
                         <div className="mt-4">

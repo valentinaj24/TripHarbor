@@ -18,6 +18,7 @@ interface AuthContextType {
   isAuthenticated: boolean
   signIn: (response: AuthResponse) => void
   signOut: () => void
+  updateUser: (user: AuthUser) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -42,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (active) {
           setUser(response.user)
+
           sessionStorage.setItem(
             'tripharbor_user',
             JSON.stringify(response.user)
@@ -67,10 +69,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   function signIn(response: AuthResponse) {
     sessionStorage.setItem('tripharbor_token', response.token)
+
     sessionStorage.setItem(
       'tripharbor_user',
       JSON.stringify(response.user)
     )
+
     setUser(response.user)
   }
 
@@ -78,6 +82,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem('tripharbor_token')
     sessionStorage.removeItem('tripharbor_user')
     setUser(null)
+  }
+
+  function updateUser(updatedUser: AuthUser) {
+    setUser(updatedUser)
+
+    sessionStorage.setItem(
+      'tripharbor_user',
+      JSON.stringify(updatedUser)
+    )
   }
 
   return (
@@ -88,6 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: user !== null,
         signIn,
         signOut,
+        updateUser,
       }}
     >
       {children}
