@@ -7,6 +7,8 @@ import TripsPage from './pages/TripsPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import TripDetailsPage from './pages/TripDetailsPage'
+import OrganizerDashboard from './pages/OrganizerDashboard'
+import CreateTripPage from './pages/CreateTripPage'
 
 export default function App() {
   return (
@@ -23,15 +25,25 @@ export default function App() {
         <Route
           path="/organizer"
           element={
-            <ProtectedRoute allowedRoles={['ORGANIZER', 'ADMIN']}>
-              <main className="mx-auto max-w-7xl px-6 py-24">
-                <h1 className="text-4xl font-bold">
-                  Organizer Dashboard
-                </h1>
-                <p className="mt-4 text-slate-500">
-                  Only organizers and administrators can access this page.
-                </p>
-              </main>
+            <ProtectedRoute allowedRoles={['ORGANIZER']}>
+              <OrganizerDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/organizer/trips/new"
+          element={
+            <ProtectedRoute allowedRoles={['ORGANIZER']}>
+              <CreateTripPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/organizer/trips/:id/edit"
+          element={
+            <ProtectedRoute allowedRoles={['ORGANIZER']}>
+              <CreateTripPage />
             </ProtectedRoute>
           }
         />

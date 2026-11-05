@@ -17,10 +17,18 @@ export default function Navbar() {
   const navigate = useNavigate()
   const { user, signOut, loading } = useAuth()
 
-  const links = [
-    { to: '/', label: 'Home' },
-    { to: '/trips', label: 'Explore Trips' },
-  ]
+const links = [
+  { to: '/', label: 'Home' },
+  { to: '/trips', label: 'Explore Trips' },
+
+  ...(user?.role === 'ORGANIZER'
+    ? [{ to: '/organizer', label: 'Dashboard' }]
+    : []),
+
+  ...(user?.role === 'ADMIN'
+    ? [{ to: '/admin', label: 'Admin Dashboard' }]
+    : []),
+]
 
   function handleLogout() {
     signOut()
