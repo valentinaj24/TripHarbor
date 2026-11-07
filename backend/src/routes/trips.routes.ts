@@ -49,8 +49,11 @@ tripsRouter.get(
             trip.maxParticipants - trip._count.registrations
           ),
           status: trip.status,
-          meetingPoint: trip.meetingPoint,
-          createdAt: trip.createdAt,
+            rejectionReason: trip.rejectionReason,
+            reviewedAt: trip.reviewedAt,
+            cancellationReason: trip.cancellationReason,
+            meetingPoint: trip.meetingPoint,
+            createdAt: trip.createdAt,
           destination: {
             id: trip.destination.id,
             name: trip.destination.name,
@@ -578,6 +581,8 @@ tripsRouter.patch(
             ...(destinationId && { destinationId }),
             // Rejected trips return to draft for another submission.
             status: 'DRAFT',
+            rejectionReason: null,
+            reviewedAt: null,
           },
         })
 
@@ -662,6 +667,8 @@ tripsRouter.patch(
         },
         data: {
           status: 'PENDING',
+          rejectionReason: null,
+          reviewedAt: null,
         },
       })
 
@@ -676,6 +683,85 @@ tripsRouter.patch(
         data: {
           id,
           status: 'PENDING',
+        },
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+)
+
+const cancelOrganizerTripSchema = z.object({
+  reason: z.string().trim().min(10).max(1000),
+}).strict()
+
+// PATCH /api/trips/:id/cancel
+tripsRouter.patch(
+  '/:id/cancel',
+  authenticate,
+  authorize('ORGANIZER'),
+  async (req: AuthenticatedRequest, res, next) => {
+    try {
+      const id = req.params.id
+
+      if (typeof id !== 'string' || !z.uuid().safeParse(id).success) {
+        return res.status(400).json({
+          message: 'Invalid trip ID.',
+        })
+      }
+
+      const parsed = cancelOrganizerTripSchema.safeParse(req.body)
+
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: 'Cancellation reason must contain 10–1000 characters.',
+        })
+      }
+
+      const result = await prisma.$transaction(async (tx) => {
+        const updated = await tx.trip.updateMany({
+          where: {
+            id,
+            organizerId: req.user!.id,
+            status: 'PUBLISHED',
+          },
+          data: {
+            status: 'CANCELLED',
+            cancellationReason: parsed.data.reason,
+          },
+        })
+
+        if (updated.count === 0) {
+          return false
+        }
+
+        await tx.registration.updateMany({
+          where: {
+            tripId: id,
+            status: {
+              in: ['PENDING', 'ACCEPTED'],
+            },
+          },
+          data: {
+            status: 'CANCELLED',
+          },
+        })
+
+        return true
+      })
+
+      if (!result) {
+        return res.status(409).json({
+          message: 'Trip not found, not published, or not owned by you.',
+        })
+      }
+
+      return res.json({
+        message: 'Trip cancelled successfully.',
+        data: {
+          id,
+          status: 'CANCELLED',
+          cancellationReason: parsed.data.reason,
         },
       })
     } catch (error) {

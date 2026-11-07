@@ -33,6 +33,12 @@ enum RegistrationStatus {
   CANCELLED
 }
 
+enum OrganizerRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
   id            String        @id @default(uuid()) @db.Uuid
   firstName     String        @map("first_name")
@@ -43,8 +49,10 @@ model User {
   accountStatus AccountStatus @default(ACTIVE) @map("account_status")
   createdAt     DateTime      @default(now()) @map("created_at")
 
-  organizedTrips Trip[]         @relation("TripOrganizer")
-  registrations  Registration[]
+  organizedTrips    Trip[]             @relation("TripOrganizer")
+  registrations     Registration[]
+  organizerRequests OrganizerRequest[] @relation("OrganizerRequestUser")
+  reviewedRequests  OrganizerRequest[] @relation("OrganizerRequestReviewer")
 
   @@map("users")
 }
@@ -77,7 +85,10 @@ model Trip {
   status          TripStatus @default(DRAFT)
   meetingPoint    String     @map("meeting_point")
   createdAt       DateTime   @default(now()) @map("created_at")
-
+  rejectionReason String?    @map("rejection_reason") @db.Text
+  reviewedAt      DateTime?  @map("reviewed_at")
+  cancellationReason String?
+  
   organizer     User           @relation("TripOrganizer", fields: [organizerId], references: [id])
   destination   Destination    @relation(fields: [destinationId], references: [id])
   activities    TripActivity[]
@@ -121,4 +132,23 @@ model Registration {
   @@unique([tripId, userId])
   @@index([userId])
   @@map("registrations")
+}
+
+model OrganizerRequest {
+  id              String                 @id @default(uuid()) @db.Uuid
+  userId          String                 @map("user_id") @db.Uuid
+  motivation      String                 @db.Text
+  experience      String                 @db.Text
+  status          OrganizerRequestStatus @default(PENDING)
+  rejectionReason String?                @map("rejection_reason") @db.Text
+  reviewedById    String?                @map("reviewed_by_id") @db.Uuid
+  createdAt       DateTime               @default(now()) @map("created_at")
+  reviewedAt      DateTime?              @map("reviewed_at")
+
+  user       User  @relation("OrganizerRequestUser", fields: [userId], references: [id])
+  reviewedBy User? @relation("OrganizerRequestReviewer", fields: [reviewedById], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@map("organizer_requests")
 }

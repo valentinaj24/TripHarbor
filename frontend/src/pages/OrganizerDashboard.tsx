@@ -18,6 +18,7 @@ import {
 import {
   getMyTrips,
   submitTripForApproval,
+  cancelOrganizerTrip,
   type OrganizerTrip,
   type TripStatus,
 } from '../services/api'
@@ -49,6 +50,9 @@ export default function OrganizerDashboard() {
   const [success, setSuccess] = useState('')
   const [filter, setFilter] = useState<'ALL' | TripStatus>('ALL')
   const [submittingId, setSubmittingId] = useState<string | null>(null)
+  const [cancellingId, setCancellingId] = useState<string | null>(null)
+  const [cancelReason, setCancelReason] = useState('')
+  const [savingCancellation, setSavingCancellation] = useState(false)
 
   async function loadTrips() {
     setLoading(true)
@@ -91,7 +95,7 @@ export default function OrganizerDashboard() {
       setTrips((current) =>
         current.map((trip) =>
           trip.id === id
-            ? { ...trip, status: 'PENDING' }
+            ? { ...trip, status: 'PENDING', rejectionReason: null, reviewedAt: null }
             : trip
         )
       )
@@ -107,6 +111,40 @@ export default function OrganizerDashboard() {
       )
     } finally {
       setSubmittingId(null)
+    }
+  }
+
+  async function handleCancelTrip(id: string) {
+    if (savingCancellation) return
+
+    const reason = cancelReason.trim()
+    if (reason.length < 10 || reason.length > 1000) {
+      setError('Cancellation reason must contain 10–1000 characters.')
+      return
+    }
+
+    if (!window.confirm('Cancel this trip and all active registrations?')) return
+
+    setSavingCancellation(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      await cancelOrganizerTrip(id, reason)
+      setTrips((current) =>
+        current.map((trip) =>
+          trip.id === id
+            ? { ...trip, status: 'CANCELLED', cancellationReason: reason, availableSpots: trip.maxParticipants }
+            : trip
+        )
+      )
+      setCancellingId(null)
+      setCancelReason('')
+      setSuccess('Trip cancelled successfully.')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to cancel this trip.')
+    } finally {
+      setSavingCancellation(false)
     }
   }
 
@@ -237,7 +275,7 @@ export default function OrganizerDashboard() {
             <button
               type="button"
               onClick={() => void loadTrips()}
-              disabled={loading || submittingId !== null}
+              disabled={loading || submittingId !== null || savingCancellation}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50"
             >
               <RefreshCw size={16} />
@@ -418,6 +456,78 @@ export default function OrganizerDashboard() {
                             <ArrowRight size={16} />
                         </Link>
                         )}
+
+                      {trip.status === 'PUBLISHED' && (
+                        <div className="mt-4">
+                          {cancellingId === trip.id ? (
+                            <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+                              <p className="text-sm font-bold text-red-800">Cancel Trip</p>
+                              <p className="mt-2 text-xs text-red-700">
+                                All active registrations will also be cancelled.
+                              </p>
+                              <textarea
+                                value={cancelReason}
+                                onChange={(event) => setCancelReason(event.target.value)}
+                                placeholder="Explain why this trip is being cancelled..."
+                                maxLength={1000}
+                                rows={3}
+                                className="mt-3 w-full rounded-xl border border-red-200 bg-white p-3 text-sm outline-none focus:border-red-400"
+                              />
+                              <div className="mt-3 flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => void handleCancelTrip(trip.id)}
+                                  disabled={savingCancellation || cancelReason.trim().length < 10}
+                                  className="flex-1 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-50"
+                                >
+                                  {savingCancellation ? 'Cancelling...' : 'Confirm Cancellation'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => { setCancellingId(null); setCancelReason('') }}
+                                  disabled={savingCancellation}
+                                  className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 disabled:opacity-50"
+                                >
+                                  Back
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => { setCancellingId(trip.id); setCancelReason(''); setError('') }}
+                              disabled={savingCancellation}
+                              className="w-full rounded-xl border border-red-200 px-4 py-3 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+                            >
+                              Cancel Trip
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {trip.status === 'CANCELLED' && (
+                        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4">
+                          <p className="text-sm font-bold text-red-800">Trip Cancelled</p>
+                          <p className="mt-2 whitespace-pre-wrap text-sm text-red-700">
+                            {trip.cancellationReason || 'No cancellation reason available.'}
+                          </p>
+                        </div>
+                      )}
+
+                      {trip.status === 'REJECTED' && (
+                        <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4">
+                          <p className="text-sm font-bold text-red-800">
+                            Trip Rejected
+                          </p>
+                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-red-700">
+                            {trip.rejectionReason ||
+                              'Your trip was not approved. Please review the details and update your trip before submitting it again.'}
+                          </p>
+                          <p className="mt-3 text-xs font-medium text-red-600">
+                            Edit your trip and submit it again for approval.
+                          </p>
+                        </div>
+                      )}
 
                       {canEdit && (
                         <div className="mt-4">
