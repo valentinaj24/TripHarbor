@@ -15,7 +15,6 @@ import { useAuth } from '../context/AuthContext'
 
 export default function LoginPage() {
   const navigate = useNavigate()
-
   const { signIn } = useAuth()
 
   const [email, setEmail] = useState('')
@@ -36,9 +35,14 @@ export default function LoginPage() {
       })
 
       signIn(response)
-        navigate('/', { replace: true })
 
-      navigate('/', { replace: true })
+      if (response.user.role === 'ADMIN') {
+        navigate('/admin', { replace: true })
+      } else if (response.user.role === 'ORGANIZER') {
+        navigate('/organizer', { replace: true })
+      } else {
+        navigate('/', { replace: true })
+      }
     } catch (err) {
       setError(
         err instanceof Error

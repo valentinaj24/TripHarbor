@@ -181,7 +181,10 @@ export type TripStatus =
 export interface OrganizerTrip extends Omit<Trip, 'organizer'> {
   coverUrl: string | null
   status: TripStatus
+  rejectionReason: string | null
+  reviewedAt: string | null
   createdAt: string
+  cancellationReason: string | null
 }
 
 export async function getMyTrips(): Promise<{ data: OrganizerTrip[] }> {
@@ -685,5 +688,383 @@ export function updateMyProfile(data: {
       Authorization: `Bearer ${token ?? ''}`,
     },
     body: JSON.stringify(data),
+  })
+}
+
+export interface AdminRecentTrip {
+  id: string
+  title: string
+  status: TripStatus
+  createdAt: string
+  destination: {
+    name: string
+    country: string
+  }
+  organizer: {
+    firstName: string
+    lastName: string
+  }
+}
+
+export interface AdminStats {
+pendingOrganizerRequests: number
+  users: {
+    total: number
+    organizers: number
+    participants: number
+  }
+  trips: {
+    total: number
+    published: number
+    pending: number
+    drafts: number
+    rejected: number
+  }
+  registrations: {
+    total: number
+    accepted: number
+    pending: number
+  }
+  recentTrips: AdminRecentTrip[]
+}
+
+export function getAdminStats() {
+  const token = sessionStorage.getItem('tripharbor_token')
+
+  return apiRequest<{ data: AdminStats }>('/api/admin/stats', {
+    headers: {
+      Authorization: `Bearer ${token ?? ''}`,
+    },
+  })
+}
+
+export interface AdminTripActivity {
+  id: string
+  title: string
+  description: string | null
+  activityDate: string
+  startTime: string | null
+  locationName: string
+  latitude: number | null
+  longitude: number | null
+  sortOrder: number
+}
+
+export interface AdminTrip {
+  id: string
+  title: string
+  description: string
+  coverUrl: string | null
+  category: string
+  difficulty: string
+  startDate: string
+  endDate: string
+  maxParticipants: number
+  status: TripStatus
+  meetingPoint: string
+  createdAt: string
+  organizer: {
+    id: string
+    firstName: string
+    lastName: string
+    email: string
+  }
+  destination: {
+    id: string
+    name: string
+    country: string
+    latitude: number
+    longitude: number
+  }
+  activities: AdminTripActivity[]
+  acceptedParticipants?: number
+}
+
+function adminAuthHeaders() {
+  const token = sessionStorage.getItem('tripharbor_token')
+
+  return {
+    Authorization: `Bearer ${token ?? ''}`,
+  }
+}
+
+export function getAdminPendingTrips() {
+  return apiRequest<{ data: AdminTrip[] }>(
+    '/api/admin/trips/pending',
+    {
+      headers: adminAuthHeaders(),
+    }
+  )
+}
+
+export function getAdminTrips(status?: TripStatus) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : ''
+
+  return apiRequest<{ data: AdminTrip[] }>(
+    `/api/admin/trips${query}`,
+    {
+      headers: adminAuthHeaders(),
+    }
+  )
+}
+
+export function reviewAdminTrip(
+  tripId: string,
+  decision: 'APPROVE' | 'REJECT',
+  reason?: string
+) {
+  return apiRequest<{
+    message: string
+    data: {
+      id: string
+      status: TripStatus
+    }
+  }>(`/api/admin/trips/${tripId}/review`, {
+    method: 'PATCH',
+    headers: adminAuthHeaders(),
+    body: JSON.stringify({
+      decision,
+      ...(decision === 'REJECT' ? { reason } : {}),
+    }),
+  })
+}
+
+export type OrganizerRequestStatus =
+  | 'PENDING'
+  | 'APPROVED'
+  | 'REJECTED'
+
+export interface OrganizerRequest {
+  id: string
+  userId: string
+  motivation: string
+  experience: string
+  status: OrganizerRequestStatus
+  rejectionReason: string | null
+  reviewedById: string | null
+  createdAt: string
+  reviewedAt: string | null
+}
+
+export interface SubmitOrganizerRequestData {
+  motivation: string
+  experience: string
+}
+
+export function getMyOrganizerRequests() {
+  const token = sessionStorage.getItem('tripharbor_token')
+
+  if (!token) {
+    throw new Error('Please log in.')
+  }
+
+  return apiRequest<{ data: OrganizerRequest[] }>(
+    '/api/organizer-requests/me',
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  )
+}
+
+export function submitOrganizerRequest(
+  data: SubmitOrganizerRequestData
+) {
+  const token = sessionStorage.getItem('tripharbor_token')
+
+  if (!token) {
+    throw new Error('Please log in.')
+  }
+
+  return apiRequest<{
+    message: string
+    data: OrganizerRequest
+  }>('/api/organizer-requests', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  })
+}
+
+export interface AdminOrganizerRequest extends OrganizerRequest {
+  user: {
+    id: string
+    firstName: string
+    lastName: string
+    email: string
+    role: UserRole
+  }
+  reviewedBy: {
+    id: string
+    firstName: string
+    lastName: string
+  } | null
+}
+
+export function getAdminOrganizerRequests(
+  status?: OrganizerRequestStatus
+) {
+  const token = sessionStorage.getItem('tripharbor_token')
+  const query = status ? `?status=${encodeURIComponent(status)}` : ''
+
+  return apiRequest<{ data: AdminOrganizerRequest[] }>(
+    `/api/admin/organizer-requests${query}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token ?? ''}`,
+      },
+    }
+  )
+}
+
+export function reviewAdminOrganizerRequest(
+  requestId: string,
+  decision: 'APPROVE' | 'REJECT',
+  reason?: string
+) {
+  const token = sessionStorage.getItem('tripharbor_token')
+
+  return apiRequest<{
+    message: string
+    data: OrganizerRequest
+  }>(
+    `/api/admin/organizer-requests/${encodeURIComponent(requestId)}/review`,
+    {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token ?? ''}`,
+      },
+      body: JSON.stringify({
+        decision,
+        ...(decision === 'REJECT' ? { reason } : {}),
+      }),
+    }
+  )
+}
+// ==========================================
+// ADMIN - USERS
+// ==========================================
+
+export type AdminAccountStatus = 'ACTIVE' | 'SUSPENDED'
+
+
+export interface AdminUser {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  role: 'PARTICIPANT' | 'ORGANIZER' | 'ADMIN'
+  accountStatus: 'ACTIVE' | 'SUSPENDED'
+  createdAt: string
+  tripCount: number
+  registrationCount: number
+}
+
+
+export function getAdminUsers() {
+  const token = sessionStorage.getItem('tripharbor_token')
+
+  return apiRequest<{ data: AdminUser[] }>('/api/admin/users', {
+    headers: {
+      Authorization: `Bearer ${token ?? ''}`,
+    },
+  })
+}
+
+export function updateAdminUserStatus(
+  userId: string,
+  accountStatus: AdminAccountStatus
+) {
+  const token = sessionStorage.getItem('tripharbor_token')
+
+  return apiRequest<{
+    message: string
+    data: AdminUser
+  }>(`/api/admin/users/${encodeURIComponent(userId)}/status`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token ?? ''}`,
+    },
+    body: JSON.stringify({ status: accountStatus }),
+  })
+}
+
+// ==========================================
+// ADMIN - ANALYTICS
+// ==========================================
+
+
+export interface AdminAnalytics {
+  users: { name: string; count: number }[]
+  trips: { name: string; count: number }[]
+  registrations: { name: string; count: number }[]
+  destinations: {
+    id: string
+    name: string
+    country: string
+    count: number
+  }[]
+  recentUsers: {
+    id: string
+    firstName: string
+    lastName: string
+    role: 'PARTICIPANT' | 'ORGANIZER' | 'ADMIN'
+    createdAt: string
+  }[]
+}
+
+
+export function getAdminAnalytics() {
+  const token = sessionStorage.getItem('tripharbor_token')
+
+  return apiRequest<{ data: AdminAnalytics }>('/api/admin/analytics', {
+    headers: {
+      Authorization: `Bearer ${token ?? ''}`,
+    },
+  })
+}
+
+
+export function cancelAdminTrip(tripId: string, reason: string) {
+  const token = sessionStorage.getItem('tripharbor_token')
+
+  return apiRequest<{
+    message: string
+    data: {
+      id: string
+      status: 'CANCELLED'
+    }
+  }>(`/api/admin/trips/${encodeURIComponent(tripId)}/cancel`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token ?? ''}`,
+    },
+    body: JSON.stringify({ reason }),
+  })
+}
+
+export function cancelOrganizerTrip(tripId: string, reason: string) {
+  const token = sessionStorage.getItem('tripharbor_token')
+
+  if (!token) {
+    throw new Error('Please log in.')
+  }
+
+  return apiRequest<{
+    message: string
+    data: {
+      id: string
+      status: 'CANCELLED'
+      cancellationReason: string
+    }
+  }>(`/api/trips/${encodeURIComponent(tripId)}/cancel`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ reason }),
   })
 }
